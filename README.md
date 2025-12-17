@@ -1,5 +1,7 @@
 # A Neuro-Semantic Framework for Multi-Modal Narrative Immersion 
 
+
+> **🔗 UI 層：** 這是 **Project H.O.L.O.** 的 AI 後端引擎。如果您正在尋找豪華UI，請查看 [ModernReader](https://github.com/STUST-KOTEWEI/ModernReader) —— 我們的前端閱讀體驗平台！
 ## 專案願景 
 故事的核心在於體驗，而非僅是文字。數百年來，我們透過視覺解碼符號來理解故事，但文字本身僅是通往故事世界的媒介。
 
