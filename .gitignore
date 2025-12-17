@@ -36,3 +36,19 @@ Thumbs.db
 
 # Media files
 *.mp3
+
+
+# Security / API Keys
+.env
+.env.local
+.env.*.local
+
+# Firebase / Google Services
+google-services.json
+GoogleService-Info.plist
+**/google-services.json
+**/GoogleService-Info.plist
+
+# API Configuration
+**/firebase.js
+**/config/api-keys.json
