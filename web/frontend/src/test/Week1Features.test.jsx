@@ -9,6 +9,10 @@ describe('Week 1 Sprint Features', () => {
   beforeEach(() => {
     // Clear all mocks before each test
     vi.clearAllMocks();
+    // Clear localStorage
+    localStorage.clear();
+    // Set API key to skip the API key sheet
+    localStorage.setItem('GEMINI_API_KEY', 'test-key');
   });
 
   it('應該顯示文本分段功能的結果', async () => {
@@ -45,10 +49,18 @@ describe('Week 1 Sprint Features', () => {
       json: async () => mockResponse,
     });
 
+    // Mock TTS response
+    const mockBlob = new Blob(['audio data'], { type: 'audio/mpeg' });
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      blob: async () => mockBlob,
+    });
+    global.URL.createObjectURL = vi.fn(() => 'blob:http://localhost/audio');
+
     render(<App />);
 
-    const textarea = screen.getByPlaceholderText('在這裡輸入您的故事或情境...');
-    const submitButton = screen.getByText('生成沉浸式體驗');
+    const textarea = screen.getByPlaceholderText(/在這裡輸入您的故事或情境/);
+    const submitButton = screen.getByText(/開始生成完整體驗/);
 
     // Enter text and submit
     fireEvent.change(textarea, { target: { value: 'Test text. More text.' } });
@@ -56,12 +68,12 @@ describe('Week 1 Sprint Features', () => {
 
     // Wait for results to appear
     await waitFor(() => {
-      expect(screen.getByText('生成結果')).toBeInTheDocument();
+      expect(screen.getByText(/AI 生成結果/)).toBeInTheDocument();
     });
 
     // Check that segmentation info is displayed
     await waitFor(() => {
-      const resultText = screen.getByText(/聽覺輸出/).parentElement.textContent;
+      const resultText = screen.getByText(/聽覺輸出建議/).parentElement.textContent;
       expect(resultText).toContain('segments');
     });
   });
@@ -95,29 +107,48 @@ describe('Week 1 Sprint Features', () => {
       json: async () => mockResponse,
     });
 
+    // Mock TTS response
+    const mockBlob = new Blob(['audio data'], { type: 'audio/mpeg' });
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      blob: async () => mockBlob,
+    });
+    global.URL.createObjectURL = vi.fn(() => 'blob:http://localhost/audio');
+
     render(<App />);
 
-    const textarea = screen.getByPlaceholderText('在這裡輸入您的故事或情境...');
-    const submitButton = screen.getByText('生成沉浸式體驗');
+    const textarea = screen.getByPlaceholderText(/在這裡輸入您的故事或情境/);
+    const submitButton = screen.getByText(/開始生成完整體驗/);
 
     fireEvent.change(textarea, { target: { value: 'Hello! How are you?' } });
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText('生成結果')).toBeInTheDocument();
+      expect(screen.getByText(/AI 生成結果/)).toBeInTheDocument();
     });
 
     // Check that haptic pattern is displayed
     await waitFor(() => {
-      const sensorText = screen.getByText(/感官輸出/).parentElement.textContent;
+      const sensorText = screen.getByText(/感官輸出建議/).parentElement.textContent;
       expect(sensorText).toContain('haptic_pattern');
       expect(sensorText).toContain('haptic_events_count');
     });
   });
 
   it('應該正確處理 TTS 請求', async () => {
+    // Mock immersion response first
+    const mockImmersionResponse = {
+      auditory_output: { tts_engine: "gTTS", segments: 1 },
+      sensory_output: { haptic_pattern: { events: [] }, haptic_events_count: 0 },
+      knowledge_graph: { segments: [], text_length: 15 }
+    };
+
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockImmersionResponse,
+    });
+
     const mockBlob = new Blob(['audio data'], { type: 'audio/mpeg' });
-    
     global.fetch.mockResolvedValueOnce({
       ok: true,
       blob: async () => mockBlob,
@@ -129,15 +160,15 @@ describe('Week 1 Sprint Features', () => {
 
     render(<App />);
 
-    const textarea = screen.getByPlaceholderText('在這裡輸入您的故事或情境...');
-    const ttsButton = screen.getByText('播放語音');
+    const textarea = screen.getByPlaceholderText(/在這裡輸入您的故事或情境/);
+    const submitButton = screen.getByText(/開始生成完整體驗/);
 
     fireEvent.change(textarea, { target: { value: 'Test audio text' } });
-    fireEvent.click(ttsButton);
+    fireEvent.click(submitButton);
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/tts'),
+        expect.stringContaining('/generate_immersion'),
         expect.objectContaining({
           method: 'POST',
           body: expect.stringContaining('Test audio text')
@@ -145,21 +176,25 @@ describe('Week 1 Sprint Features', () => {
       );
     });
 
-    // Check that audio player appears
+    // Check that API was called for TTS as well
     await waitFor(() => {
-      const audioElement = screen.getByText(/語音輸出/);
-      expect(audioElement).toBeInTheDocument();
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/tts'),
+        expect.objectContaining({
+          method: 'POST'
+        })
+      );
     });
   });
 
   it('應該處理空文本輸入', async () => {
     render(<App />);
 
-    const submitButton = screen.getByText('生成沉浸式體驗');
+    const submitButton = screen.getByText(/開始生成完整體驗/);
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText('請輸入敘事文字')).toBeInTheDocument();
+      expect(screen.getByText(/請先輸入文字/)).toBeInTheDocument();
     });
   });
 
@@ -171,8 +206,8 @@ describe('Week 1 Sprint Features', () => {
 
     render(<App />);
 
-    const textarea = screen.getByPlaceholderText('在這裡輸入您的故事或情境...');
-    const submitButton = screen.getByText('生成沉浸式體驗');
+    const textarea = screen.getByPlaceholderText(/在這裡輸入您的故事或情境/);
+    const submitButton = screen.getByText(/開始生成完整體驗/);
 
     fireEvent.change(textarea, { target: { value: 'Test text' } });
     fireEvent.click(submitButton);
@@ -207,21 +242,29 @@ describe('Week 1 Sprint Features', () => {
       json: async () => mockResponse,
     });
 
+    // Mock TTS response
+    const mockBlob = new Blob(['audio data'], { type: 'audio/mpeg' });
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      blob: async () => mockBlob,
+    });
+    global.URL.createObjectURL = vi.fn(() => 'blob:http://localhost/audio');
+
     render(<App />);
 
-    const textarea = screen.getByPlaceholderText('在這裡輸入您的故事或情境...');
-    const submitButton = screen.getByText('生成沉浸式體驗');
+    const textarea = screen.getByPlaceholderText(/在這裡輸入您的故事或情境/);
+    const submitButton = screen.getByText(/開始生成完整體驗/);
 
     fireEvent.change(textarea, { target: { value: 'Long text with multiple paragraphs.' } });
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText('生成結果')).toBeInTheDocument();
+      expect(screen.getByText(/AI 生成結果/)).toBeInTheDocument();
     });
 
     // Check that knowledge graph contains processing info
     await waitFor(() => {
-      const kgText = screen.getByText(/知識圖譜/).parentElement.textContent;
+      const kgText = screen.getByText(/知識圖譜分析/).parentElement.textContent;
       expect(kgText).toContain('processing_strategy');
       expect(kgText).toContain('text_length');
     });

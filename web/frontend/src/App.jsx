@@ -1,133 +1,62 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './App.css';
 
-// 後端 API 的網址
-const API_URL = 'http://127.0.0.1:8000';
+// Import components
+import Header from './components/Header';
+import ApiKeySheet from './components/ApiKeySheet';
+import HeroSection from './components/HeroSection';
+import VisionSection from './components/VisionSection';
+import ScenariosSection from './components/ScenariosSection';
+import InteractiveDemo from './components/InteractiveDemo';
+import EngineSection from './components/EngineSection';
+import ProgressSection from './components/ProgressSection';
+import FutureSection from './components/FutureSection';
+import Footer from './components/Footer';
 
 function App() {
-  const [text, setText] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState('');
-  const [audioSrc, setAudioSrc] = useState('');
-  const [ttsLoading, setTtsLoading] = useState(false);
+  const [showApiKeySheet, setShowApiKeySheet] = useState(false);
 
-  const handleTTS = async () => {
-    if (!text.trim()) {
-      setError('請輸入要轉換為語音的文字');
-      return;
+  // Check if API key exists on mount
+  useEffect(() => {
+    const hasKey = localStorage.getItem('GEMINI_API_KEY');
+    if (!hasKey) {
+      setShowApiKeySheet(true);
     }
-    setTtsLoading(true);
-    setError('');
-    setAudioSrc('');
-
-    try {
-        const response = await fetch(`${API_URL}/tts`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text, lang: 'zh-tw' })
-        });
-
-        if (!response.ok) {
-            throw new Error(`TTS API 請求失敗，狀態碼: ${response.status}`);
-        }
-
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        setAudioSrc(url);
-    } catch (err) {
-        setError(err.message);
-    } finally {
-        setTtsLoading(false);
-    }
-  };
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    setLoading(true);
-    setError('');
-    setResult(null);
-
-    if (!text.trim()) {
-      setError('請輸入敘事文字');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const response = await fetch(`${API_URL}/generate_immersion`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text: text }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`API 請求失敗，狀態碼: ${response.status}`);
-      }
-
-      const data = await response.json();
-      setResult(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, []);
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>Project-HOLO</h1>
-        <p>多模態敘事沉浸體驗生成器</p>
-      </header>
+    <div className="App antialiased">
+      {/* API Key Settings Button */}
+      <button
+        onClick={() => setShowApiKeySheet(true)}
+        className="fixed bottom-4 right-4 z-40 rounded-full bg-blue-600 text-white w-12 h-12 shadow-lg cursor-pointer border-none"
+        aria-label="設定 API Key"
+      >
+        ⚙️
+      </button>
+
+      {/* API Key Sheet */}
+      <ApiKeySheet
+        isOpen={showApiKeySheet}
+        onClose={() => setShowApiKeySheet(false)}
+      />
+
+      {/* Header */}
+      <Header />
+
+      {/* Main Content */}
       <main>
-        <form onSubmit={handleSubmit} className="narrative-form">
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="在這裡輸入您的故事或情境..."
-            rows="5"
-            disabled={loading}
-          />
-          <button type="submit" disabled={loading}>
-            {loading ? '生成中...' : '生成沉浸式體驗'}
-          </button>
-          <button type="button" onClick={handleTTS} disabled={ttsLoading}>
-            {ttsLoading ? '語音生成中...' : '播放語音'}
-          </button>
-        </form>
-
-        {error && <p className="error-message">{error}</p>}
-
-        {audioSrc && (
-          <div className="audio-player">
-            <h3>語音輸出</h3>
-            <audio controls autoPlay src={audioSrc}>
-              您的瀏覽器不支援音訊播放。
-            </audio>
-          </div>
-        )}
-
-        {result && (
-          <div className="result-container">
-            <h2>生成結果</h2>
-            <div className="result-section">
-              <h3>聽覺輸出</h3>
-              <pre>{JSON.stringify(result.auditory_output, null, 2)}</pre>
-            </div>
-            <div className="result-section">
-              <h3>感官輸出</h3>
-              <pre>{JSON.stringify(result.sensory_output, null, 2)}</pre>
-            </div>
-            <div className="result-section">
-              <h3>知識圖譜</h3>
-              <pre>{JSON.stringify(result.knowledge_graph, null, 2)}</pre>
-            </div>
-          </div>
-        )}
+        <HeroSection />
+        <VisionSection />
+        <ScenariosSection />
+        <InteractiveDemo onOpenApiKeySheet={() => setShowApiKeySheet(true)} />
+        <EngineSection />
+        <ProgressSection />
+        <FutureSection />
       </main>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }
