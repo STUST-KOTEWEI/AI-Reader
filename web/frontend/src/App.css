@@ -14,16 +14,24 @@
   position: absolute;
   top: 0;
   right: 0;
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
-  background-color: #333;
-  border: 1px solid #555;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  color: #fff;
   cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
 }
 
 .profile-button:hover {
-  background-color: #444;
-  border-color: #646cff;
+  background: rgba(132, 94, 247, 0.2);
+  border-color: rgba(132, 94, 247, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(132, 94, 247, 0.3);
 }
 
 .logo {
