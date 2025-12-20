@@ -5,6 +5,27 @@
   text-align: center;
 }
 
+.App-header {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.profile-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  background-color: #333;
+  border: 1px solid #555;
+  cursor: pointer;
+}
+
+.profile-button:hover {
+  background-color: #444;
+  border-color: #646cff;
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;

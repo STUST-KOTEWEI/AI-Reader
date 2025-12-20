@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import './App.css';
+import UserProfile from './components/UserProfile';
 
 // 後端 API 的網址
 const API_URL = 'http://127.0.0.1:8000';
@@ -11,6 +12,8 @@ function App() {
   const [error, setError] = useState('');
   const [audioSrc, setAudioSrc] = useState('');
   const [ttsLoading, setTtsLoading] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
 
   const handleTTS = async () => {
     if (!text.trim()) {
@@ -55,12 +58,18 @@ function App() {
     }
 
     try {
+      const requestBody = { text: text };
+      // Include user profile in request if available
+      if (userProfile) {
+        requestBody.user_profile = userProfile;
+      }
+      
       const response = await fetch(`${API_URL}/generate_immersion`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ text: text }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -81,6 +90,13 @@ function App() {
       <header className="App-header">
         <h1>Project-HOLO</h1>
         <p>多模態敘事沉浸體驗生成器</p>
+        <button 
+          className="profile-button" 
+          onClick={() => setProfileOpen(true)}
+          aria-label="開啟使用者設定"
+        >
+          ⚙️ 設定
+        </button>
       </header>
       <main>
         <form onSubmit={handleSubmit} className="narrative-form">
@@ -128,6 +144,12 @@ function App() {
           </div>
         )}
       </main>
+
+      <UserProfile
+        isOpen={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        onProfileChange={setUserProfile}
+      />
     </div>
   );
 }

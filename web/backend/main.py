@@ -12,6 +12,10 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from holo.ingestion.text_segmenter import TextSegmenter
 from holo.auditory.elevenlabs_tts import get_tts_engine
 from holo.sensory.haptics_emulator import HapticsEmulator
+from holo.profile.user_profile import (
+    UserProfile,
+    get_profile_manager
+)
 
 app = FastAPI(
     title="Project-HOLO API",
@@ -39,6 +43,7 @@ app.add_middleware(
 text_segmenter = TextSegmenter()
 tts_engine = get_tts_engine()
 haptics_emulator = HapticsEmulator()
+profile_manager = get_profile_manager()
 
 
 class NarrativeRequest(BaseModel):
@@ -64,21 +69,41 @@ async def generate_immersion(request: NarrativeRequest):
     - **text**: 必要，要處理的敘事文本。
     - **user_profile**: 可選，使用者的個人化設定。
     """
+    # Get user profile settings
+    user_id = request.user_profile.get('user_id', 'default')
+    profile = profile_manager.get_profile(user_id)
+    
+    # Apply any runtime profile updates from request
+    if request.user_profile.get('accessibility'):
+        profile.update_accessibility(**request.user_profile['accessibility'])
+    if request.user_profile.get('preferences'):
+        profile.update_preferences(**request.user_profile['preferences'])
+    
     # Use Week 1 Sprint features: text segmentation and haptics
     segments_data = text_segmenter.get_segments_with_metadata(request.text)
     haptic_pattern = haptics_emulator.generate_from_text(request.text)
+    
+    # Apply haptic intensity from user profile
+    haptic_multiplier = profile.get_haptic_multiplier()
+    if haptic_pattern.get("events"):
+        for event in haptic_pattern["events"]:
+            event["intensity"] = event.get("intensity", 0.5) * haptic_multiplier
     
     # Build auditory output with TTS info
     auditory_data = {
         "tts_engine": "ElevenLabs" if not hasattr(tts_engine, 'is_fallback') else "gTTS (fallback)",
         "segments": segments_data["total_segments"],
-        "available_voices": tts_engine.get_available_voices()
+        "available_voices": tts_engine.get_available_voices(),
+        "audio_enabled": profile.accessibility.audio_enabled,
+        "audio_speed": profile.get_audio_speed()
     }
     
     # Build sensory output with haptics
     sensory_data = {
         "haptic_pattern": haptic_pattern,
         "haptic_events_count": len(haptic_pattern.get("events", [])),
+        "haptic_enabled": profile.accessibility.haptic_enabled,
+        "haptic_intensity": profile.accessibility.haptic_intensity,
         "neuro": "calm_alpha_wave"
     }
     
@@ -175,3 +200,74 @@ async def list_haptic_patterns():
         "patterns": list(patterns.keys()),
         "total": len(patterns)
     }
+
+
+# User Profile API Endpoints
+
+class ProfileUpdateRequest(BaseModel):
+    display_name: str = None
+    accessibility: Dict[str, Any] = None
+    preferences: Dict[str, Any] = None
+
+
+@app.get("/profile/{user_id}", summary="取得使用者設定檔", description="取得指定使用者的個人化設定")
+async def get_profile(user_id: str = "default"):
+    """
+    取得使用者的個人化設定檔。
+
+    - **user_id**: 使用者 ID (預設為 'default')
+    """
+    profile = profile_manager.get_profile(user_id)
+    return profile.to_dict()
+
+
+@app.put("/profile/{user_id}", summary="更新使用者設定檔", description="更新指定使用者的個人化設定")
+async def update_profile(user_id: str, request: ProfileUpdateRequest):
+    """
+    更新使用者的個人化設定檔。
+
+    - **user_id**: 使用者 ID
+    - **display_name**: 顯示名稱 (可選)
+    - **accessibility**: 無障礙設定 (可選)
+    - **preferences**: 使用者偏好設定 (可選)
+    """
+    update_data = {}
+    if request.display_name is not None:
+        update_data['display_name'] = request.display_name
+    if request.accessibility is not None:
+        update_data['accessibility'] = request.accessibility
+    if request.preferences is not None:
+        update_data['preferences'] = request.preferences
+    
+    profile = profile_manager.update_profile(user_id, update_data)
+    return profile.to_dict()
+
+
+@app.get("/profile", summary="取得預設使用者設定檔", description="取得預設使用者的個人化設定")
+async def get_default_profile():
+    """
+    取得預設使用者的個人化設定檔。
+    """
+    profile = profile_manager.get_profile("default")
+    return profile.to_dict()
+
+
+@app.put("/profile", summary="更新預設使用者設定檔", description="更新預設使用者的個人化設定")
+async def update_default_profile(request: ProfileUpdateRequest):
+    """
+    更新預設使用者的個人化設定檔。
+
+    - **display_name**: 顯示名稱 (可選)
+    - **accessibility**: 無障礙設定 (可選)
+    - **preferences**: 使用者偏好設定 (可選)
+    """
+    update_data = {}
+    if request.display_name is not None:
+        update_data['display_name'] = request.display_name
+    if request.accessibility is not None:
+        update_data['accessibility'] = request.accessibility
+    if request.preferences is not None:
+        update_data['preferences'] = request.preferences
+    
+    profile = profile_manager.update_profile("default", update_data)
+    return profile.to_dict()
