@@ -11,6 +11,11 @@ from enum import Enum
 import json
 
 
+# Constants
+DEFAULT_USER_ID = 'default'
+DEFAULT_DISPLAY_NAME = '使用者'
+
+
 class HapticIntensityLevel(Enum):
     """Haptic feedback intensity levels for accessibility."""
     OFF = 0.0
@@ -123,8 +128,8 @@ class UserProfile:
         accessibility: Accessibility settings
         preferences: User preferences
     """
-    user_id: str = "default"
-    display_name: str = "使用者"
+    user_id: str = DEFAULT_USER_ID
+    display_name: str = DEFAULT_DISPLAY_NAME
     accessibility: AccessibilitySettings = field(
         default_factory=AccessibilitySettings
     )
@@ -146,8 +151,8 @@ class UserProfile:
         preferences_data = data.get('preferences', {})
         
         return cls(
-            user_id=data.get('user_id', 'default'),
-            display_name=data.get('display_name', '使用者'),
+            user_id=data.get('user_id', DEFAULT_USER_ID),
+            display_name=data.get('display_name', DEFAULT_DISPLAY_NAME),
             accessibility=AccessibilitySettings.from_dict(accessibility_data),
             preferences=UserPreferences.from_dict(preferences_data)
         )
@@ -218,9 +223,9 @@ class ProfileManager:
         """Initialize the profile manager."""
         self._profiles: Dict[str, UserProfile] = {}
         # Create default profile
-        self._profiles['default'] = UserProfile()
+        self._profiles[DEFAULT_USER_ID] = UserProfile()
     
-    def get_profile(self, user_id: str = 'default') -> UserProfile:
+    def get_profile(self, user_id: str = DEFAULT_USER_ID) -> UserProfile:
         """
         Get user profile by ID.
         
@@ -273,7 +278,7 @@ class ProfileManager:
         Returns:
             True if deleted, False if not found
         """
-        if user_id in self._profiles and user_id != 'default':
+        if user_id in self._profiles and user_id != DEFAULT_USER_ID:
             del self._profiles[user_id]
             return True
         return False

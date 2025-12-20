@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import './UserProfile.css';
 
 const API_URL = 'http://127.0.0.1:8000';
@@ -13,6 +13,23 @@ function UserProfile({ onProfileChange, isOpen, onClose }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // Handle Escape key to close the modal
+  const handleKeyDown = useCallback((event) => {
+    if (event.key === 'Escape') {
+      onClose();
+    }
+  }, [onClose]);
+
+  // Add keyboard event listener when open
+  useEffect(() => {
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [isOpen, handleKeyDown]);
 
   // Fetch profile on mount
   useEffect(() => {
@@ -91,26 +108,37 @@ function UserProfile({ onProfileChange, isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="profile-overlay" onClick={onClose}>
+    <div 
+      className="profile-overlay" 
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="profile-title"
+    >
       <div className="profile-panel" onClick={(e) => e.stopPropagation()}>
         <div className="profile-header">
-          <h2>使用者設定</h2>
-          <button className="close-button" onClick={onClose}>
+          <h2 id="profile-title">使用者設定</h2>
+          <button 
+            className="close-button" 
+            onClick={onClose}
+            aria-label="關閉設定面板"
+          >
             ✕
           </button>
         </div>
 
-        {loading && <p className="loading">載入中...</p>}
-        {error && <p className="error-message">{error}</p>}
+        {loading && <p className="loading" aria-live="polite">載入中...</p>}
+        {error && <p className="error-message" role="alert">{error}</p>}
 
         {profile && (
           <div className="profile-content">
             {/* Display Name */}
             <div className="profile-section">
               <h3>基本設定</h3>
-              <label>
+              <label htmlFor="display-name">
                 顯示名稱
                 <input
+                  id="display-name"
                   type="text"
                   value={profile.display_name}
                   onChange={(e) =>

@@ -28,7 +28,7 @@ const mockProfile = {
 describe('UserProfile', () => {
   beforeEach(() => {
     // Mock fetch for profile API
-    global.fetch = vi.fn((url) => {
+    globalThis.fetch = vi.fn((url) => {
       if (url.includes('/profile')) {
         return Promise.resolve({
           ok: true,
