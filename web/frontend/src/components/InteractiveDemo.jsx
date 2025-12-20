@@ -18,7 +18,11 @@ const styleSensors = [
   { style: '專業且清晰', icon: '👓', title: '智慧眼鏡：偵測到閱讀專注模式' },
 ];
 
-// Audio processing helpers
+/**
+ * Decodes a base64-encoded string to an ArrayBuffer
+ * @param {string} base64 - The base64-encoded string to decode
+ * @returns {ArrayBuffer} The decoded binary data as an ArrayBuffer
+ */
 function base64ToArrayBuffer(base64) {
   const binaryString = window.atob(base64);
   const len = binaryString.length;
@@ -29,6 +33,17 @@ function base64ToArrayBuffer(base64) {
   return bytes.buffer;
 }
 
+/**
+ * Converts raw PCM audio data to WAV format
+ * @param {Int16Array} pcmData - Raw 16-bit PCM audio samples
+ * @param {number} sampleRate - Sample rate of the audio (e.g., 22050, 44100)
+ * @returns {Blob} A Blob containing the WAV file data
+ * 
+ * WAV file structure:
+ * - RIFF header (12 bytes)
+ * - fmt chunk (24 bytes) - format information
+ * - data chunk (8 bytes + audio data) - raw PCM samples
+ */
 function pcmToWav(pcmData, sampleRate) {
   const numChannels = 1;
   const bitsPerSample = 16;

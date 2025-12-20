@@ -1,7 +1,7 @@
 # A Neuro-Semantic Framework for Multi-Modal Narrative Immersion 
 
+> **🎉 整合版本：** AI-Reader 與 ModernReader 已整合！現在前端 UI 和後端引擎都在同一個專案中。
 
-> **🔗 UI 層：** 這是 **Project H.O.L.O.** 的 AI 後端引擎。如果您正在尋找豪華UI，請查看 [ModernReader](https://github.com/STUST-KOTEWEI/ModernReader) —— 我們的前端閱讀體驗平台！
 ## 專案願景 
 故事的核心在於體驗，而非僅是文字。數百年來，我們透過視覺解碼符號來理解故事，但文字本身僅是通往故事世界的媒介。
 
@@ -22,6 +22,64 @@ Project H.O.L.O. 的使命，就是打破這個媒介的限制，提出一個大
 3. **多模態感知系統**：
    - 整合聽覺、觸覺與嗅覺回饋，打造沉浸式的敘事體驗。
    - 開發 API 供硬體設備（如觸覺反饋裝置）使用。
+
+## 專案架構
+
+```
+AI-Reader/
+├── web/
+│   ├── frontend/          # React 前端應用 (整合 ModernReader UI)
+│   │   ├── src/
+│   │   │   ├── components/  # React 組件
+│   │   │   │   ├── Header.jsx
+│   │   │   │   ├── HeroSection.jsx
+│   │   │   │   ├── VisionSection.jsx
+│   │   │   │   ├── ScenariosSection.jsx
+│   │   │   │   ├── InteractiveDemo.jsx
+│   │   │   │   ├── EngineSection.jsx
+│   │   │   │   ├── ProgressSection.jsx
+│   │   │   │   ├── FutureSection.jsx
+│   │   │   │   └── Footer.jsx
+│   │   │   └── App.jsx
+│   │   └── package.json
+│   └── backend/           # FastAPI 後端
+│       └── main.py
+├── holo/                  # 核心 Python 模組
+│   ├── ingestion/         # 文本分段處理
+│   ├── auditory/          # TTS 語音合成
+│   └── sensory/           # 觸覺回饋模擬
+└── tests/                 # 測試檔案
+```
+
+## 快速開始
+
+### 前端開發
+
+```bash
+cd web/frontend
+npm install
+npm run dev
+```
+
+### 後端開發
+
+```bash
+cd web/backend
+pip install -r requirements.txt
+uvicorn main:app --reload
+```
+
+## 主要功能
+
+### 🎨 現代化 UI (來自 ModernReader)
+- **多輸入方式**：文字輸入、書籍封面/ISBN 掃描、臉部情緒辨識
+- **互動式演示**：HSP 引擎可視化、感官回饋模擬
+- **響應式設計**：支援桌面和移動設備
+
+### 🔊 多模態輸出
+- **聽覺輸出**：TTS 語音合成，支援多種語言
+- **觸覺回饋**：觸覺模式生成（心跳、脈衝、震動等）
+- **知識圖譜**：文本分段與語意分析
 
 ## 預期成果 
 - 一個沉浸式敘事框架，能夠將任何文本轉化為多感官體驗。
