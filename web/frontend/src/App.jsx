@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import './App.css';
 import UserProfile from './components/UserProfile';
+import { t } from './i18n/translations';
 
 // 後端 API 的網址
 const API_URL = 'http://127.0.0.1:8000';
@@ -14,10 +15,19 @@ function App() {
   const [ttsLoading, setTtsLoading] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
+  const [language, setLanguage] = useState('zh-tw');
+
+  const handleProfileChange = (profile) => {
+    setUserProfile(profile);
+    // Update language when profile changes
+    if (profile?.preferences?.preferred_language) {
+      setLanguage(profile.preferences.preferred_language);
+    }
+  };
 
   const handleTTS = async () => {
     if (!text.trim()) {
-      setError('請輸入要轉換為語音的文字');
+      setError(t(language, 'placeholder'));
       return;
     }
     setTtsLoading(true);
@@ -28,11 +38,11 @@ function App() {
         const response = await fetch(`${API_URL}/tts`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text, lang: 'zh-tw' })
+            body: JSON.stringify({ text, lang: language })
         });
 
         if (!response.ok) {
-            throw new Error(`TTS API 請求失敗，狀態碼: ${response.status}`);
+            throw new Error(`TTS API error: ${response.status}`);
         }
 
         const blob = await response.blob();
@@ -52,7 +62,7 @@ function App() {
     setResult(null);
 
     if (!text.trim()) {
-      setError('請輸入敘事文字');
+      setError(t(language, 'placeholder'));
       setLoading(false);
       return;
     }
@@ -73,7 +83,7 @@ function App() {
       });
 
       if (!response.ok) {
-        throw new Error(`API 請求失敗，狀態碼: ${response.status}`);
+        throw new Error(`API error: ${response.status}`);
       }
 
       const data = await response.json();
@@ -88,14 +98,14 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Project-HOLO</h1>
-        <p>多模態敘事沉浸體驗生成器</p>
+        <h1>{t(language, 'appTitle')}</h1>
+        <p>{t(language, 'appSubtitle')}</p>
         <button 
           className="profile-button" 
           onClick={() => setProfileOpen(true)}
-          aria-label="開啟使用者設定"
+          aria-label={t(language, 'settings')}
         >
-          ⚙️ 設定
+          ⚙️ {t(language, 'settings')}
         </button>
       </header>
       <main>
@@ -103,15 +113,15 @@ function App() {
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="在這裡輸入您的故事或情境..."
+            placeholder={t(language, 'placeholder')}
             rows="5"
             disabled={loading}
           />
           <button type="submit" disabled={loading}>
-            {loading ? '生成中...' : '生成沉浸式體驗'}
+            {loading ? t(language, 'generating') : t(language, 'generate')}
           </button>
           <button type="button" onClick={handleTTS} disabled={ttsLoading}>
-            {ttsLoading ? '語音生成中...' : '播放語音'}
+            {ttsLoading ? t(language, 'generatingAudio') : t(language, 'playAudio')}
           </button>
         </form>
 
@@ -119,26 +129,26 @@ function App() {
 
         {audioSrc && (
           <div className="audio-player">
-            <h3>語音輸出</h3>
+            <h3>{t(language, 'audioOutput')}</h3>
             <audio controls autoPlay src={audioSrc}>
-              您的瀏覽器不支援音訊播放。
+              {t(language, 'browserNotSupported')}
             </audio>
           </div>
         )}
 
         {result && (
           <div className="result-container">
-            <h2>生成結果</h2>
+            <h2>{t(language, 'results')}</h2>
             <div className="result-section">
-              <h3>聽覺輸出</h3>
+              <h3>{t(language, 'auditoryOutput')}</h3>
               <pre>{JSON.stringify(result.auditory_output, null, 2)}</pre>
             </div>
             <div className="result-section">
-              <h3>感官輸出</h3>
+              <h3>{t(language, 'sensoryOutput')}</h3>
               <pre>{JSON.stringify(result.sensory_output, null, 2)}</pre>
             </div>
             <div className="result-section">
-              <h3>知識圖譜</h3>
+              <h3>{t(language, 'knowledgeGraph')}</h3>
               <pre>{JSON.stringify(result.knowledge_graph, null, 2)}</pre>
             </div>
           </div>
@@ -148,7 +158,8 @@ function App() {
       <UserProfile
         isOpen={profileOpen}
         onClose={() => setProfileOpen(false)}
-        onProfileChange={setUserProfile}
+        onProfileChange={handleProfileChange}
+        language={language}
       />
     </div>
   );

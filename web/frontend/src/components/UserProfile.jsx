@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import './UserProfile.css';
+import { t } from '../i18n/translations';
 
 const API_URL = 'http://127.0.0.1:8000';
 
@@ -8,11 +9,17 @@ const API_URL = 'http://127.0.0.1:8000';
  * 
  * Provides user profile settings panel with accessibility options.
  */
-function UserProfile({ onProfileChange, isOpen, onClose }) {
+function UserProfile({ onProfileChange, isOpen, onClose, language = 'zh-tw' }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [currentLang, setCurrentLang] = useState(language);
+
+  // Update currentLang when language prop changes
+  useEffect(() => {
+    setCurrentLang(language);
+  }, [language]);
 
   // Handle Escape key to close the modal
   const handleKeyDown = useCallback((event) => {
@@ -44,10 +51,14 @@ function UserProfile({ onProfileChange, isOpen, onClose }) {
     try {
       const response = await fetch(`${API_URL}/profile`);
       if (!response.ok) {
-        throw new Error('無法載入使用者設定');
+        throw new Error(t(currentLang, 'loadError'));
       }
       const data = await response.json();
       setProfile(data);
+      // Update current language from profile
+      if (data.preferences?.preferred_language) {
+        setCurrentLang(data.preferences.preferred_language);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -71,7 +82,7 @@ function UserProfile({ onProfileChange, isOpen, onClose }) {
         }),
       });
       if (!response.ok) {
-        throw new Error('無法儲存設定');
+        throw new Error(t(currentLang, 'saveError'));
       }
       const data = await response.json();
       setProfile(data);
@@ -103,6 +114,10 @@ function UserProfile({ onProfileChange, isOpen, onClose }) {
         [key]: value,
       },
     }));
+    // Update current language immediately when language preference changes
+    if (key === 'preferred_language') {
+      setCurrentLang(value);
+    }
   };
 
   if (!isOpen) return null;
@@ -117,26 +132,26 @@ function UserProfile({ onProfileChange, isOpen, onClose }) {
     >
       <div className="profile-panel" onClick={(e) => e.stopPropagation()}>
         <div className="profile-header">
-          <h2 id="profile-title">使用者設定</h2>
+          <h2 id="profile-title">{t(currentLang, 'userSettings')}</h2>
           <button 
             className="close-button" 
             onClick={onClose}
-            aria-label="關閉設定面板"
+            aria-label={t(currentLang, 'closePanel')}
           >
             ✕
           </button>
         </div>
 
-        {loading && <p className="loading" aria-live="polite">載入中...</p>}
+        {loading && <p className="loading" aria-live="polite">{t(currentLang, 'loading')}</p>}
         {error && <p className="error-message" role="alert">{error}</p>}
 
         {profile && (
           <div className="profile-content">
             {/* Display Name */}
             <div className="profile-section">
-              <h3>基本設定</h3>
+              <h3>{t(currentLang, 'basicSettings')}</h3>
               <label htmlFor="display-name">
-                顯示名稱
+                {t(currentLang, 'displayName')}
                 <input
                   id="display-name"
                   type="text"
@@ -153,7 +168,7 @@ function UserProfile({ onProfileChange, isOpen, onClose }) {
 
             {/* Accessibility Settings */}
             <div className="profile-section">
-              <h3>無障礙設定</h3>
+              <h3>{t(currentLang, 'accessibilitySettings')}</h3>
 
               <label className="checkbox-label">
                 <input
@@ -163,12 +178,12 @@ function UserProfile({ onProfileChange, isOpen, onClose }) {
                     updateAccessibility('haptic_enabled', e.target.checked)
                   }
                 />
-                啟用觸覺回饋
+                {t(currentLang, 'enableHaptic')}
               </label>
 
               {profile.accessibility.haptic_enabled && (
                 <label>
-                  觸覺強度
+                  {t(currentLang, 'hapticIntensity')}
                   <input
                     type="range"
                     min="0"
@@ -194,12 +209,12 @@ function UserProfile({ onProfileChange, isOpen, onClose }) {
                     updateAccessibility('audio_enabled', e.target.checked)
                   }
                 />
-                啟用語音輸出
+                {t(currentLang, 'enableAudio')}
               </label>
 
               {profile.accessibility.audio_enabled && (
                 <label>
-                  語音速度
+                  {t(currentLang, 'audioSpeed')}
                   <select
                     value={profile.accessibility.audio_speed}
                     onChange={(e) =>
@@ -209,10 +224,10 @@ function UserProfile({ onProfileChange, isOpen, onClose }) {
                       )
                     }
                   >
-                    <option value="0.75">慢速 (0.75x)</option>
-                    <option value="1.0">正常 (1x)</option>
-                    <option value="1.25">快速 (1.25x)</option>
-                    <option value="1.5">極快 (1.5x)</option>
+                    <option value="0.75">{t(currentLang, 'slowSpeed')} (0.75x)</option>
+                    <option value="1.0">{t(currentLang, 'normalSpeed')} (1x)</option>
+                    <option value="1.25">{t(currentLang, 'fastSpeed')} (1.25x)</option>
+                    <option value="1.5">{t(currentLang, 'veryFastSpeed')} (1.5x)</option>
                   </select>
                 </label>
               )}
@@ -225,21 +240,21 @@ function UserProfile({ onProfileChange, isOpen, onClose }) {
                     updateAccessibility('high_contrast', e.target.checked)
                   }
                 />
-                高對比模式
+                {t(currentLang, 'highContrast')}
               </label>
 
               <label>
-                字體大小
+                {t(currentLang, 'fontSize')}
                 <select
                   value={profile.accessibility.font_size}
                   onChange={(e) =>
                     updateAccessibility('font_size', parseInt(e.target.value))
                   }
                 >
-                  <option value="12">小 (12px)</option>
-                  <option value="16">中 (16px)</option>
-                  <option value="20">大 (20px)</option>
-                  <option value="24">特大 (24px)</option>
+                  <option value="12">{t(currentLang, 'fontSmall')} (12px)</option>
+                  <option value="16">{t(currentLang, 'fontMedium')} (16px)</option>
+                  <option value="20">{t(currentLang, 'fontLarge')} (20px)</option>
+                  <option value="24">{t(currentLang, 'fontExtraLarge')} (24px)</option>
                 </select>
               </label>
 
@@ -251,7 +266,7 @@ function UserProfile({ onProfileChange, isOpen, onClose }) {
                     updateAccessibility('reduce_motion', e.target.checked)
                   }
                 />
-                減少動態效果
+                {t(currentLang, 'reduceMotion')}
               </label>
 
               <label className="checkbox-label">
@@ -262,16 +277,16 @@ function UserProfile({ onProfileChange, isOpen, onClose }) {
                     updateAccessibility('screen_reader_mode', e.target.checked)
                   }
                 />
-                螢幕閱讀器模式
+                {t(currentLang, 'screenReaderMode')}
               </label>
             </div>
 
             {/* User Preferences */}
             <div className="profile-section">
-              <h3>偏好設定</h3>
+              <h3>{t(currentLang, 'preferences')}</h3>
 
               <label>
-                偏好語言
+                {t(currentLang, 'preferredLanguage')}
                 <select
                   value={profile.preferences.preferred_language}
                   onChange={(e) =>
@@ -279,23 +294,23 @@ function UserProfile({ onProfileChange, isOpen, onClose }) {
                   }
                 >
                   <option value="zh-tw">繁體中文</option>
-                  <option value="zh-cn">簡體中文</option>
+                  <option value="zh-cn">简体中文</option>
                   <option value="en">English</option>
                   <option value="ja">日本語</option>
                 </select>
               </label>
 
               <label>
-                主題
+                {t(currentLang, 'theme')}
                 <select
                   value={profile.preferences.theme}
                   onChange={(e) =>
                     updatePreferences('theme', e.target.value)
                   }
                 >
-                  <option value="dark">深色</option>
-                  <option value="light">淺色</option>
-                  <option value="auto">自動</option>
+                  <option value="dark">{t(currentLang, 'themeDark')}</option>
+                  <option value="light">{t(currentLang, 'themeLight')}</option>
+                  <option value="auto">{t(currentLang, 'themeAuto')}</option>
                 </select>
               </label>
 
@@ -307,7 +322,7 @@ function UserProfile({ onProfileChange, isOpen, onClose }) {
                     updatePreferences('auto_play_audio', e.target.checked)
                   }
                 />
-                自動播放語音
+                {t(currentLang, 'autoPlayAudio')}
               </label>
 
               <label className="checkbox-label">
@@ -318,7 +333,7 @@ function UserProfile({ onProfileChange, isOpen, onClose }) {
                     updatePreferences('save_history', e.target.checked)
                   }
                 />
-                儲存閱讀歷史
+                {t(currentLang, 'saveHistory')}
               </label>
             </div>
 
@@ -329,7 +344,7 @@ function UserProfile({ onProfileChange, isOpen, onClose }) {
                 onClick={saveProfile}
                 disabled={saving}
               >
-                {saving ? '儲存中...' : '儲存設定'}
+                {saving ? t(currentLang, 'saving') : t(currentLang, 'save')}
               </button>
             </div>
           </div>
