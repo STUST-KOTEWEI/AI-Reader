@@ -10,10 +10,40 @@
   margin-bottom: 1rem;
 }
 
-.profile-button {
+.header-buttons {
   position: absolute;
   top: 0;
   right: 0;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.header-button {
+  padding: 0.65rem;
+  font-size: 1rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-button:hover {
+  background: rgba(132, 94, 247, 0.2);
+  border-color: rgba(132, 94, 247, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(132, 94, 247, 0.3);
+}
+
+.profile-button {
   padding: 0.65rem 1.25rem;
   font-size: 0.85rem;
   font-weight: 500;

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import './App.css';
 import UserProfile from './components/UserProfile';
+import ReadingProgress from './components/ReadingProgress';
+import FavoritesList from './components/FavoritesList';
 import { t } from './i18n/translations';
 
 // 後端 API 的網址
@@ -14,6 +16,8 @@ function App() {
   const [audioSrc, setAudioSrc] = useState('');
   const [ttsLoading, setTtsLoading] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [progressOpen, setProgressOpen] = useState(false);
+  const [favoritesOpen, setFavoritesOpen] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
   const [language, setLanguage] = useState('zh-tw');
 
@@ -100,13 +104,29 @@ function App() {
       <header className="App-header">
         <h1>{t(language, 'appTitle')}</h1>
         <p>{t(language, 'appSubtitle')}</p>
-        <button 
-          className="profile-button" 
-          onClick={() => setProfileOpen(true)}
-          aria-label={t(language, 'settings')}
-        >
-          ⚙️ {t(language, 'settings')}
-        </button>
+        <div className="header-buttons">
+          <button 
+            className="header-button" 
+            onClick={() => setProgressOpen(true)}
+            aria-label="閱讀歷史"
+          >
+            📊
+          </button>
+          <button 
+            className="header-button" 
+            onClick={() => setFavoritesOpen(true)}
+            aria-label="收藏清單"
+          >
+            ❤️
+          </button>
+          <button 
+            className="profile-button" 
+            onClick={() => setProfileOpen(true)}
+            aria-label={t(language, 'settings')}
+          >
+            ⚙️ {t(language, 'settings')}
+          </button>
+        </div>
       </header>
       <main>
         <form onSubmit={handleSubmit} className="narrative-form">
@@ -159,6 +179,18 @@ function App() {
         isOpen={profileOpen}
         onClose={() => setProfileOpen(false)}
         onProfileChange={handleProfileChange}
+        language={language}
+      />
+
+      <ReadingProgress
+        isOpen={progressOpen}
+        onClose={() => setProgressOpen(false)}
+        language={language}
+      />
+
+      <FavoritesList
+        isOpen={favoritesOpen}
+        onClose={() => setFavoritesOpen(false)}
         language={language}
       />
     </div>

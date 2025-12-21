@@ -1,9 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 import sys
 import os
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 # 將專案根目錄加入 Python 路徑，以便引用 holo 模組
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -17,10 +17,30 @@ from holo.profile.user_profile import (
     get_profile_manager
 )
 
+# Import new modules
+from holo.history import (
+    ReadingSession,
+    ReadingHistory,
+    get_history_manager
+)
+from holo.bookmarks import (
+    Bookmark,
+    Favorite,
+    get_bookmarks_manager
+)
+from holo.auth import (
+    User,
+    Session,
+    get_auth_manager
+)
+
 app = FastAPI(
     title="Project-HOLO API",
     description="提供神經語意框架的多模態敘事沉浸體驗 API",
-    version="0.1.0",
+    version="0.2.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
 )
 
 # 設定 CORS
@@ -44,6 +64,11 @@ text_segmenter = TextSegmenter()
 tts_engine = get_tts_engine()
 haptics_emulator = HapticsEmulator()
 profile_manager = get_profile_manager()
+
+# Initialize new managers
+history_manager = get_history_manager()
+bookmarks_manager = get_bookmarks_manager()
+auth_manager = get_auth_manager()
 
 
 class NarrativeRequest(BaseModel):
@@ -271,3 +296,242 @@ async def update_default_profile(request: ProfileUpdateRequest):
     
     profile = profile_manager.update_profile("default", update_data)
     return profile.to_dict()
+
+
+# ============================================================
+# Reading History API Endpoints
+# ============================================================
+
+class ReadingSessionRequest(BaseModel):
+    session_id: str
+    content_id: str
+    content_title: str
+    started_at: str
+    ended_at: Optional[str] = None
+    progress: float = 0.0
+    duration_seconds: int = 0
+
+
+@app.get("/history/{user_id}", summary="取得閱讀歷史", description="取得使用者的閱讀歷史記錄", tags=["閱讀歷史"])
+async def get_reading_history(user_id: str = "default"):
+    """取得使用者的閱讀歷史記錄。"""
+    history = history_manager.get_history(user_id)
+    return history.to_dict()
+
+
+@app.post("/history/{user_id}/session", summary="新增閱讀記錄", description="新增一筆閱讀記錄", tags=["閱讀歷史"])
+async def add_reading_session(user_id: str, request: ReadingSessionRequest):
+    """新增一筆閱讀記錄。"""
+    session = ReadingSession(
+        session_id=request.session_id,
+        content_id=request.content_id,
+        content_title=request.content_title,
+        started_at=request.started_at,
+        ended_at=request.ended_at,
+        progress=request.progress,
+        duration_seconds=request.duration_seconds
+    )
+    history = history_manager.add_session(user_id, session)
+    return history.to_dict()
+
+
+@app.get("/history/{user_id}/recent", summary="取得最近閱讀", description="取得最近的閱讀記錄", tags=["閱讀歷史"])
+async def get_recent_reading(user_id: str = "default", limit: int = 10):
+    """取得最近的閱讀記錄。"""
+    history = history_manager.get_history(user_id)
+    recent = history.get_recent_sessions(limit)
+    return {"sessions": [s.to_dict() for s in recent]}
+
+
+@app.delete("/history/{user_id}", summary="清除閱讀歷史", description="清除使用者的閱讀歷史", tags=["閱讀歷史"])
+async def clear_reading_history(user_id: str):
+    """清除使用者的閱讀歷史。"""
+    success = history_manager.clear_history(user_id)
+    return {"success": success}
+
+
+# ============================================================
+# Bookmarks & Favorites API Endpoints
+# ============================================================
+
+class BookmarkRequest(BaseModel):
+    bookmark_id: str
+    content_id: str
+    content_title: str
+    position: str = ""
+    note: str = ""
+    tags: List[str] = []
+
+
+class FavoriteRequest(BaseModel):
+    favorite_id: str
+    content_id: str
+    content_title: str
+    content_type: str = "book"
+    rating: int = 0
+
+
+@app.get("/bookmarks/{user_id}", summary="取得書籤", description="取得使用者的所有書籤和收藏", tags=["書籤與收藏"])
+async def get_user_bookmarks(user_id: str = "default"):
+    """取得使用者的所有書籤和收藏。"""
+    user_bookmarks = bookmarks_manager.get_user_bookmarks(user_id)
+    return user_bookmarks.to_dict()
+
+
+@app.post("/bookmarks/{user_id}/bookmark", summary="新增書籤", description="新增一個書籤", tags=["書籤與收藏"])
+async def add_bookmark(user_id: str, request: BookmarkRequest):
+    """新增一個書籤。"""
+    bookmark = Bookmark(
+        bookmark_id=request.bookmark_id,
+        content_id=request.content_id,
+        content_title=request.content_title,
+        position=request.position,
+        note=request.note,
+        tags=request.tags
+    )
+    user_bookmarks = bookmarks_manager.add_bookmark(user_id, bookmark)
+    return user_bookmarks.to_dict()
+
+
+@app.delete("/bookmarks/{user_id}/bookmark/{bookmark_id}", summary="刪除書籤", description="刪除一個書籤", tags=["書籤與收藏"])
+async def remove_bookmark(user_id: str, bookmark_id: str):
+    """刪除一個書籤。"""
+    success = bookmarks_manager.remove_bookmark(user_id, bookmark_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="書籤未找到")
+    return {"success": True}
+
+
+@app.post("/bookmarks/{user_id}/favorite", summary="新增收藏", description="新增到收藏清單", tags=["書籤與收藏"])
+async def add_favorite(user_id: str, request: FavoriteRequest):
+    """新增到收藏清單。"""
+    favorite = Favorite(
+        favorite_id=request.favorite_id,
+        content_id=request.content_id,
+        content_title=request.content_title,
+        content_type=request.content_type,
+        rating=request.rating
+    )
+    user_bookmarks = bookmarks_manager.add_favorite(user_id, favorite)
+    return user_bookmarks.to_dict()
+
+
+@app.delete("/bookmarks/{user_id}/favorite/{favorite_id}", summary="刪除收藏", description="從收藏清單移除", tags=["書籤與收藏"])
+async def remove_favorite(user_id: str, favorite_id: str):
+    """從收藏清單移除。"""
+    success = bookmarks_manager.remove_favorite(user_id, favorite_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="收藏未找到")
+    return {"success": True}
+
+
+@app.get("/bookmarks/{user_id}/content/{content_id}", summary="取得內容書籤", description="取得特定內容的所有書籤", tags=["書籤與收藏"])
+async def get_content_bookmarks(user_id: str, content_id: str):
+    """取得特定內容的所有書籤。"""
+    user_bookmarks = bookmarks_manager.get_user_bookmarks(user_id)
+    bookmarks = user_bookmarks.get_bookmarks_by_content(content_id)
+    return {"bookmarks": [b.to_dict() for b in bookmarks]}
+
+
+@app.get("/bookmarks/{user_id}/is-favorite/{content_id}", summary="檢查是否收藏", description="檢查內容是否已收藏", tags=["書籤與收藏"])
+async def check_is_favorite(user_id: str, content_id: str):
+    """檢查內容是否已收藏。"""
+    user_bookmarks = bookmarks_manager.get_user_bookmarks(user_id)
+    return {"is_favorite": user_bookmarks.is_favorite(content_id)}
+
+
+# ============================================================
+# Authentication API Endpoints
+# ============================================================
+
+class RegisterRequest(BaseModel):
+    username: str
+    email: str
+    password: str
+
+
+class LoginRequest(BaseModel):
+    username_or_email: str
+    password: str
+
+
+class PasswordChangeRequest(BaseModel):
+    old_password: str
+    new_password: str
+
+
+@app.post("/auth/register", summary="用戶註冊", description="註冊新用戶帳號", tags=["認證系統"])
+async def register_user(request: RegisterRequest):
+    """註冊新用戶帳號。"""
+    user = auth_manager.register(
+        username=request.username,
+        email=request.email,
+        password=request.password
+    )
+    if not user:
+        raise HTTPException(status_code=400, detail="用戶名或電子郵件已存在")
+    return user.to_dict()
+
+
+@app.post("/auth/login", summary="用戶登入", description="用戶登入並取得會話令牌", tags=["認證系統"])
+async def login_user(request: LoginRequest):
+    """用戶登入並取得會話令牌。"""
+    session = auth_manager.login(
+        username_or_email=request.username_or_email,
+        password=request.password
+    )
+    if not session:
+        raise HTTPException(status_code=401, detail="無效的憑證")
+    return {
+        "session_id": session.session_id,
+        "token": session.token,
+        "user_id": session.user_id,
+        "expires_at": session.expires_at
+    }
+
+
+@app.post("/auth/logout", summary="用戶登出", description="登出並使會話令牌失效", tags=["認證系統"])
+async def logout_user(token: str):
+    """登出並使會話令牌失效。"""
+    success = auth_manager.logout(token)
+    return {"success": success}
+
+
+@app.get("/auth/validate", summary="驗證令牌", description="驗證會話令牌是否有效", tags=["認證系統"])
+async def validate_token(token: str):
+    """驗證會話令牌是否有效。"""
+    user = auth_manager.validate_token(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="無效或過期的令牌")
+    return user.to_dict()
+
+
+@app.get("/auth/user/{user_id}", summary="取得用戶資訊", description="取得指定用戶的資訊", tags=["認證系統"])
+async def get_user_info(user_id: str):
+    """取得指定用戶的資訊。"""
+    user = auth_manager.get_user(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="用戶未找到")
+    return user.to_dict()
+
+
+@app.put("/auth/password/{user_id}", summary="更改密碼", description="更改用戶密碼", tags=["認證系統"])
+async def change_password(user_id: str, request: PasswordChangeRequest):
+    """更改用戶密碼。"""
+    success = auth_manager.update_password(
+        user_id=user_id,
+        old_password=request.old_password,
+        new_password=request.new_password
+    )
+    if not success:
+        raise HTTPException(status_code=400, detail="舊密碼不正確")
+    return {"success": True}
+
+
+@app.delete("/auth/user/{user_id}", summary="停用帳號", description="停用用戶帳號", tags=["認證系統"])
+async def deactivate_user(user_id: str):
+    """停用用戶帳號。"""
+    success = auth_manager.deactivate_user(user_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="用戶未找到")
+    return {"success": True}
