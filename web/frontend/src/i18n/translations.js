@@ -64,6 +64,19 @@ const translations = {
     auditoryOutput: '聽覺輸出',
     sensoryOutput: '感官輸出',
     knowledgeGraph: '知識圖譜',
+    
+    // Navigation & Features
+    menu: '選單',
+    login: '登入',
+    logout: '登出',
+    notifications: '通知',
+    readingHistory: '閱讀歷史',
+    favorites: '我的收藏',
+    social: '社群互動',
+    addToFavorites: '加入收藏',
+    share: '分享',
+    saveProgress: '儲存進度',
+    loginRequired: '需要登入',
   },
   
   'zh-cn': {
@@ -126,6 +139,19 @@ const translations = {
     auditoryOutput: '听觉输出',
     sensoryOutput: '感官输出',
     knowledgeGraph: '知识图谱',
+    
+    // Navigation & Features
+    menu: '菜单',
+    login: '登录',
+    logout: '退出',
+    notifications: '通知',
+    readingHistory: '阅读历史',
+    favorites: '我的收藏',
+    social: '社区互动',
+    addToFavorites: '加入收藏',
+    share: '分享',
+    saveProgress: '保存进度',
+    loginRequired: '需要登录',
   },
   
   'en': {
@@ -188,6 +214,19 @@ const translations = {
     auditoryOutput: 'Auditory Output',
     sensoryOutput: 'Sensory Output',
     knowledgeGraph: 'Knowledge Graph',
+    
+    // Navigation & Features
+    menu: 'Menu',
+    login: 'Login',
+    logout: 'Logout',
+    notifications: 'Notifications',
+    readingHistory: 'Reading History',
+    favorites: 'My Favorites',
+    social: 'Social',
+    addToFavorites: 'Add to Favorites',
+    share: 'Share',
+    saveProgress: 'Save Progress',
+    loginRequired: 'Login required',
   },
   
   'ja': {
@@ -250,6 +289,19 @@ const translations = {
     auditoryOutput: '聴覚出力',
     sensoryOutput: '感覚出力',
     knowledgeGraph: 'ナレッジグラフ',
+    
+    // Navigation & Features
+    menu: 'メニュー',
+    login: 'ログイン',
+    logout: 'ログアウト',
+    notifications: '通知',
+    readingHistory: '閲覧履歴',
+    favorites: 'お気に入り',
+    social: 'コミュニティ',
+    addToFavorites: 'お気に入りに追加',
+    share: '共有',
+    saveProgress: '進捗を保存',
+    loginRequired: 'ログインが必要',
   },
 };
 
