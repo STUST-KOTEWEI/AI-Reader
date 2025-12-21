@@ -1,0 +1,13 @@
+{
+  "id": "romance_01",
+  "title": "Summer Love",
+  "language": "en",
+  "genre": "romance",
+  "text": "The sunset painted the beach in shades of rose and gold as they walked along the shore, their fingers intertwined. The gentle waves kissed their bare feet while seagulls sang their evening songs. In this perfect moment, with the salty breeze playing with her hair, he knew he had found where his heart belonged.",
+  "metadata": {
+    "emotions": ["love", "happiness", "peace"],
+    "visual_elements": ["sunset", "beach", "waves", "sky", "seagulls"],
+    "scent_families": ["oceanic", "fresh", "floral"],
+    "mood": "romantic"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "mystery_01",
+  "title": "The Midnight Mystery",
+  "language": "en",
+  "genre": "mystery",
+  "text": "The old mansion stood silently at the end of the abandoned road, its windows dark like empty eyes watching the night. Thunder rolled in the distance as lightning briefly illuminated the crumbling facade. She clutched the ancient key in her trembling hand, knowing that what awaited inside would change everything she thought she knew.",
+  "metadata": {
+    "emotions": ["fear", "curiosity", "tension"],
+    "visual_elements": ["mansion", "windows", "lightning", "road", "key"],
+    "scent_families": ["earthy", "smoky", "woody"],
+    "mood": "mysterious"
+  }
+}
