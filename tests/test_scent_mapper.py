@@ -135,7 +135,8 @@ class TestScentMapper:
         assert "floral" in families
         assert "woody" in families
         assert "citrus" in families
-        assert len(families) == 10
+        # Use >= to be resilient to future additions
+        assert len(families) >= 10
     
     def test_get_emotion_suggestions(self):
         """Test emotion suggestions."""

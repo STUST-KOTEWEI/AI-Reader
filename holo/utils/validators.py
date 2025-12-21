@@ -76,7 +76,7 @@ def validate_text_input(
 
 
 def validate_intensity(
-    intensity: Union[int, float],
+    intensity: Optional[Union[int, float]],
     min_value: float = 0.0,
     max_value: float = 1.0,
     field_name: str = "intensity"

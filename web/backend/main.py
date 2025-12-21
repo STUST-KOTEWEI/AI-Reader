@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 import sys
 import os
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 # 將專案根目錄加入 Python 路徑，以便引用 holo 模組
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -238,7 +238,7 @@ async def generate_visual(request: VisualRequest):
 class ScentRequest(BaseModel):
     text: str
     intensity: float = 0.5
-    emotion: str = None
+    emotion: Optional[str] = None
 
 
 @app.post("/generate_scent", summary="Generate Scent Profile", description="Maps narrative elements to scent profiles.")

@@ -27,6 +27,9 @@ class ImageConceptGenerator:
     determine mood, and provide composition recommendations.
     """
     
+    # Default mood when no mood keywords are detected
+    DEFAULT_MOOD = "peaceful"
+    
     # Visual element keywords
     VISUAL_ELEMENTS = {
         "nature": {
@@ -222,7 +225,7 @@ class ImageConceptGenerator:
             mood_scores[mood] = len(matches)
         
         if not mood_scores or all(v == 0 for v in mood_scores.values()):
-            return "peaceful"  # Default mood
+            return self.DEFAULT_MOOD
         
         return max(mood_scores, key=mood_scores.get)
     

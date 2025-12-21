@@ -39,7 +39,8 @@ echo -e "${GREEN}✅ Dependencies installed${NC}"
 # Start backend server
 echo -e "${YELLOW}🖥️  Starting Backend Server...${NC}"
 cd web/backend
-python -m uvicorn main:app --reload --port 8000 &
+API_PORT=${API_PORT:-8000}
+python -m uvicorn main:app --reload --port $API_PORT &
 BACKEND_PID=$!
 cd "$PROJECT_ROOT"
 
@@ -58,9 +59,9 @@ echo -e "${GREEN}═════════════════════
 echo -e "${GREEN}  Project-HOLO Development Environment Started!${NC}"
 echo -e "${GREEN}═══════════════════════════════════════════════════${NC}"
 echo ""
-echo -e "  Backend API:  ${YELLOW}http://localhost:8000${NC}"
+echo -e "  Backend API:  ${YELLOW}http://localhost:${API_PORT}${NC}"
 echo -e "  Frontend App: ${YELLOW}http://localhost:5173${NC}"
-echo -e "  API Docs:     ${YELLOW}http://localhost:8000/docs${NC}"
+echo -e "  API Docs:     ${YELLOW}http://localhost:${API_PORT}/docs${NC}"
 echo ""
 echo -e "  Press Ctrl+C to stop all servers"
 echo ""

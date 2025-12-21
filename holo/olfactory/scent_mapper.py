@@ -143,6 +143,20 @@ class ScentMapper:
         "romance": ["floral", "sweet", "spicy"]
     }
     
+    # Hardware channel mapping for scent families
+    CHANNEL_MAP = {
+        "floral": 1,
+        "woody": 2,
+        "citrus": 3,
+        "spicy": 4,
+        "fresh": 5,
+        "sweet": 6,
+        "earthy": 7,
+        "oceanic": 8,
+        "smoky": 9,
+        "herbal": 10
+    }
+    
     def __init__(self):
         """Initialize the scent mapper."""
         self._compile_patterns()
@@ -314,19 +328,7 @@ class ScentMapper:
     
     def _get_channel_id(self, family: str) -> int:
         """Map scent family to hardware channel ID."""
-        channel_map = {
-            "floral": 1,
-            "woody": 2,
-            "citrus": 3,
-            "spicy": 4,
-            "fresh": 5,
-            "sweet": 6,
-            "earthy": 7,
-            "oceanic": 8,
-            "smoky": 9,
-            "herbal": 10
-        }
-        return channel_map.get(family, 0)
+        return self.CHANNEL_MAP.get(family, 0)
     
     def _empty_result(self) -> Dict[str, Any]:
         """Return empty result for empty input."""
