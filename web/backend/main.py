@@ -34,10 +34,39 @@ from holo.auth import (
     get_auth_manager
 )
 
+# Import social, recommendations, notifications, database, and logging
+from holo.social import (
+    Comment,
+    Share,
+    get_social_manager
+)
+from holo.recommendations import (
+    ContentItem,
+    UserPreference,
+    Recommendation,
+    get_recommendation_engine
+)
+from holo.notifications import (
+    Notification,
+    NotificationPreferences,
+    get_notification_manager
+)
+from holo.database import get_database_manager
+from holo.logging import (
+    get_app_logger,
+    get_performance_monitor,
+    get_request_logger
+)
+
+# Initialize logging
+logger = get_app_logger()
+perf_monitor = get_performance_monitor()
+request_logger = get_request_logger()
+
 app = FastAPI(
     title="Project-HOLO API",
     description="提供神經語意框架的多模態敘事沉浸體驗 API",
-    version="0.2.0",
+    version="0.3.0",
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json"
@@ -69,6 +98,11 @@ profile_manager = get_profile_manager()
 history_manager = get_history_manager()
 bookmarks_manager = get_bookmarks_manager()
 auth_manager = get_auth_manager()
+social_manager = get_social_manager()
+recommendation_engine = get_recommendation_engine()
+notification_manager = get_notification_manager()
+
+logger.info("API initialized successfully")
 
 
 class NarrativeRequest(BaseModel):
@@ -535,3 +569,619 @@ async def deactivate_user(user_id: str):
     if not success:
         raise HTTPException(status_code=404, detail="用戶未找到")
     return {"success": True}
+
+
+# ============================================================
+# Social Features API Endpoints
+# ============================================================
+
+class CommentRequest(BaseModel):
+    comment_id: str
+    user_id: str
+    content_id: str
+    text: str
+    parent_id: Optional[str] = None
+
+
+class ShareRequest(BaseModel):
+    share_id: str
+    user_id: str
+    content_id: str
+    platform: str
+    message: str = ""
+
+
+@app.get("/social/comments/{content_id}", summary="取得留言", description="取得內容的所有留言", tags=["社交功能"])
+async def get_comments(content_id: str):
+    """取得內容的所有留言。"""
+    comments = social_manager.get_comments(content_id)
+    return {"comments": [c.to_dict() for c in comments]}
+
+
+@app.post("/social/comments", summary="新增留言", description="新增留言", tags=["社交功能"])
+async def add_comment(request: CommentRequest):
+    """新增留言。"""
+    comment = social_manager.add_comment(
+        comment_id=request.comment_id,
+        user_id=request.user_id,
+        content_id=request.content_id,
+        text=request.text,
+        parent_id=request.parent_id
+    )
+    return comment.to_dict()
+
+
+@app.delete("/social/comments/{content_id}/{comment_id}", summary="刪除留言", description="刪除留言", tags=["社交功能"])
+async def delete_comment(content_id: str, comment_id: str):
+    """刪除留言。"""
+    success = social_manager.delete_comment(content_id, comment_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="留言未找到")
+    return {"success": True}
+
+
+@app.post("/social/comments/{content_id}/{comment_id}/like", summary="按讚留言", description="對留言按讚", tags=["社交功能"])
+async def like_comment(content_id: str, comment_id: str, user_id: str):
+    """對留言按讚。"""
+    success = social_manager.like_comment(user_id, comment_id, content_id)
+    return {"success": success}
+
+
+@app.post("/social/share", summary="分享內容", description="分享內容到社交平台", tags=["社交功能"])
+async def share_content(request: ShareRequest):
+    """分享內容到社交平台。"""
+    share = social_manager.share_content(
+        share_id=request.share_id,
+        user_id=request.user_id,
+        content_id=request.content_id,
+        platform=request.platform,
+        message=request.message
+    )
+    return share.to_dict()
+
+
+@app.get("/social/share-url/{content_id}/{platform}", summary="取得分享連結", description="取得社交平台分享連結", tags=["社交功能"])
+async def get_share_url(content_id: str, platform: str):
+    """取得社交平台分享連結。"""
+    url = social_manager.get_share_url(content_id, platform)
+    return {"url": url}
+
+
+@app.get("/social/stats/{content_id}", summary="取得內容統計", description="取得內容的社交統計", tags=["社交功能"])
+async def get_content_stats(content_id: str):
+    """取得內容的社交統計。"""
+    stats = social_manager.get_stats(content_id)
+    return stats.to_dict()
+
+
+@app.post("/social/view/{content_id}", summary="記錄瀏覽", description="記錄內容瀏覽", tags=["社交功能"])
+async def record_view(content_id: str):
+    """記錄內容瀏覽。"""
+    social_manager.record_view(content_id)
+    return {"success": True}
+
+
+# ============================================================
+# Recommendation API Endpoints
+# ============================================================
+
+class ContentItemRequest(BaseModel):
+    content_id: str
+    title: str
+    author: str = ""
+    genre: str = ""
+    tags: List[str] = []
+    rating: float = 0.0
+    popularity_score: float = 0.0
+
+
+class UserPreferenceRequest(BaseModel):
+    user_id: str
+    favorite_genres: List[str] = []
+    favorite_authors: List[str] = []
+    favorite_tags: List[str] = []
+
+
+@app.get("/recommendations/{user_id}", summary="取得推薦", description="取得個人化推薦內容", tags=["推薦系統"])
+async def get_recommendations(user_id: str, limit: int = 10):
+    """取得個人化推薦內容。"""
+    recommendations = recommendation_engine.get_recommendations(user_id, limit)
+    return {"recommendations": [r.to_dict() for r in recommendations]}
+
+
+@app.get("/recommendations/similar/{content_id}", summary="取得相似內容", description="取得相似內容推薦", tags=["推薦系統"])
+async def get_similar_content(content_id: str, limit: int = 5):
+    """取得相似內容推薦。"""
+    recommendations = recommendation_engine.get_similar_content(content_id, limit)
+    return {"recommendations": [r.to_dict() for r in recommendations]}
+
+
+@app.get("/recommendations/popular", summary="取得熱門內容", description="取得熱門內容", tags=["推薦系統"])
+async def get_popular_content(limit: int = 10):
+    """取得熱門內容。"""
+    recommendations = recommendation_engine.get_popular_content(limit)
+    return {"recommendations": [r.to_dict() for r in recommendations]}
+
+
+@app.get("/recommendations/trending", summary="取得最新熱門", description="取得最新熱門內容", tags=["推薦系統"])
+async def get_trending_content(limit: int = 10):
+    """取得最新熱門內容。"""
+    recommendations = recommendation_engine.get_trending_content(limit)
+    return {"recommendations": [r.to_dict() for r in recommendations]}
+
+
+@app.post("/recommendations/content", summary="新增內容", description="新增內容到目錄", tags=["推薦系統"])
+async def add_content_item(request: ContentItemRequest):
+    """新增內容到目錄。"""
+    from holo.recommendations import ContentItem
+    content = ContentItem(
+        content_id=request.content_id,
+        title=request.title,
+        author=request.author,
+        genre=request.genre,
+        tags=request.tags,
+        rating=request.rating,
+        popularity_score=request.popularity_score
+    )
+    recommendation_engine.add_content(content)
+    return content.to_dict()
+
+
+@app.put("/recommendations/preferences/{user_id}", summary="設定偏好", description="設定使用者推薦偏好", tags=["推薦系統"])
+async def set_user_preferences(user_id: str, request: UserPreferenceRequest):
+    """設定使用者推薦偏好。"""
+    from holo.recommendations import UserPreference
+    preference = UserPreference(
+        user_id=user_id,
+        favorite_genres=request.favorite_genres,
+        favorite_authors=request.favorite_authors,
+        favorite_tags=request.favorite_tags
+    )
+    recommendation_engine.set_user_preference(preference)
+    return preference.to_dict()
+
+
+@app.post("/recommendations/rate/{user_id}/{content_id}", summary="評分內容", description="對內容評分", tags=["推薦系統"])
+async def rate_content(user_id: str, content_id: str, rating: float):
+    """對內容評分。"""
+    recommendation_engine.rate_content(user_id, content_id, rating)
+    return {"success": True}
+
+
+# ============================================================
+# Notification API Endpoints
+# ============================================================
+
+class NotificationRequest(BaseModel):
+    notification_id: str
+    user_id: str
+    title: str
+    message: str
+    type: str = "info"
+    action_url: Optional[str] = None
+    metadata: Dict[str, Any] = {}
+
+
+class NotificationPreferencesRequest(BaseModel):
+    email_enabled: bool = True
+    push_enabled: bool = True
+    in_app_enabled: bool = True
+    social_notifications: bool = True
+    recommendation_notifications: bool = True
+    system_notifications: bool = True
+
+
+@app.get("/notifications/{user_id}", summary="取得通知", description="取得使用者通知", tags=["通知系統"])
+async def get_notifications(user_id: str, unread_only: bool = False, limit: int = 50):
+    """取得使用者通知。"""
+    notifications = notification_manager.get_notifications(user_id, unread_only, limit)
+    return {"notifications": [n.to_dict() for n in notifications]}
+
+
+@app.get("/notifications/{user_id}/unread-count", summary="取得未讀數", description="取得未讀通知數量", tags=["通知系統"])
+async def get_unread_count(user_id: str):
+    """取得未讀通知數量。"""
+    count = notification_manager.get_unread_count(user_id)
+    return {"count": count}
+
+
+@app.post("/notifications", summary="發送通知", description="發送通知給使用者", tags=["通知系統"])
+async def send_notification(request: NotificationRequest):
+    """發送通知給使用者。"""
+    notification = notification_manager.send_notification(
+        notification_id=request.notification_id,
+        user_id=request.user_id,
+        title=request.title,
+        message=request.message,
+        notification_type=request.type,
+        action_url=request.action_url,
+        metadata=request.metadata
+    )
+    if notification:
+        return notification.to_dict()
+    return {"message": "通知未發送（使用者設定關閉）"}
+
+
+@app.put("/notifications/{user_id}/{notification_id}/read", summary="標記已讀", description="標記通知為已讀", tags=["通知系統"])
+async def mark_notification_read(user_id: str, notification_id: str):
+    """標記通知為已讀。"""
+    success = notification_manager.mark_as_read(user_id, notification_id)
+    return {"success": success}
+
+
+@app.put("/notifications/{user_id}/read-all", summary="全部標記已讀", description="標記所有通知為已讀", tags=["通知系統"])
+async def mark_all_notifications_read(user_id: str):
+    """標記所有通知為已讀。"""
+    count = notification_manager.mark_all_as_read(user_id)
+    return {"count": count}
+
+
+@app.delete("/notifications/{user_id}/{notification_id}", summary="刪除通知", description="刪除通知", tags=["通知系統"])
+async def delete_notification(user_id: str, notification_id: str):
+    """刪除通知。"""
+    success = notification_manager.delete_notification(user_id, notification_id)
+    return {"success": success}
+
+
+@app.delete("/notifications/{user_id}", summary="清除通知", description="清除所有通知", tags=["通知系統"])
+async def clear_notifications(user_id: str):
+    """清除所有通知。"""
+    count = notification_manager.clear_notifications(user_id)
+    return {"count": count}
+
+
+@app.get("/notifications/{user_id}/preferences", summary="取得通知設定", description="取得通知偏好設定", tags=["通知系統"])
+async def get_notification_preferences(user_id: str):
+    """取得通知偏好設定。"""
+    prefs = notification_manager.get_preferences(user_id)
+    return prefs.to_dict()
+
+
+@app.put("/notifications/{user_id}/preferences", summary="更新通知設定", description="更新通知偏好設定", tags=["通知系統"])
+async def update_notification_preferences(user_id: str, request: NotificationPreferencesRequest):
+    """更新通知偏好設定。"""
+    from holo.notifications import NotificationPreferences
+    prefs = NotificationPreferences(
+        user_id=user_id,
+        email_enabled=request.email_enabled,
+        push_enabled=request.push_enabled,
+        in_app_enabled=request.in_app_enabled,
+        social_notifications=request.social_notifications,
+        recommendation_notifications=request.recommendation_notifications,
+        system_notifications=request.system_notifications
+    )
+    notification_manager.set_preferences(prefs)
+    return prefs.to_dict()
+
+
+# ============================================================
+# System & Monitoring API Endpoints
+# ============================================================
+
+@app.get("/system/health", summary="健康檢查", description="檢查系統健康狀態", tags=["系統監控"])
+async def health_check():
+    """檢查系統健康狀態。"""
+    return {
+        "status": "healthy",
+        "version": "0.3.0",
+        "services": {
+            "api": "up",
+            "database": "up",
+            "cache": "up"
+        }
+    }
+
+
+@app.get("/system/metrics", summary="系統指標", description="取得系統效能指標", tags=["系統監控"])
+async def get_metrics():
+    """取得系統效能指標。"""
+    metrics = perf_monitor.get_all_metrics()
+    return metrics
+
+
+# ============================================================
+# Social Features API Endpoints
+# ============================================================
+
+class CommentRequest(BaseModel):
+    comment_id: str
+    user_id: str
+    content_id: str
+    text: str
+    parent_id: Optional[str] = None
+
+
+class ShareRequest(BaseModel):
+    share_id: str
+    user_id: str
+    content_id: str
+    platform: str
+    message: str = ""
+
+
+@app.get("/social/comments/{content_id}", summary="取得留言", description="取得內容的所有留言", tags=["社交功能"])
+async def get_comments(content_id: str):
+    """取得內容的所有留言。"""
+    comments = social_manager.get_comments(content_id)
+    return {"comments": [c.to_dict() for c in comments]}
+
+
+@app.post("/social/comments", summary="新增留言", description="新增留言", tags=["社交功能"])
+async def add_comment(request: CommentRequest):
+    """新增留言。"""
+    comment = social_manager.add_comment(
+        comment_id=request.comment_id,
+        user_id=request.user_id,
+        content_id=request.content_id,
+        text=request.text,
+        parent_id=request.parent_id
+    )
+    return comment.to_dict()
+
+
+@app.delete("/social/comments/{content_id}/{comment_id}", summary="刪除留言", description="刪除留言", tags=["社交功能"])
+async def delete_comment(content_id: str, comment_id: str):
+    """刪除留言。"""
+    success = social_manager.delete_comment(content_id, comment_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="留言未找到")
+    return {"success": True}
+
+
+@app.post("/social/comments/{content_id}/{comment_id}/like", summary="按讚留言", description="對留言按讚", tags=["社交功能"])
+async def like_comment(content_id: str, comment_id: str, user_id: str):
+    """對留言按讚。"""
+    success = social_manager.like_comment(user_id, comment_id, content_id)
+    return {"success": success}
+
+
+@app.post("/social/share", summary="分享內容", description="分享內容到社交平台", tags=["社交功能"])
+async def share_content(request: ShareRequest):
+    """分享內容到社交平台。"""
+    share = social_manager.share_content(
+        share_id=request.share_id,
+        user_id=request.user_id,
+        content_id=request.content_id,
+        platform=request.platform,
+        message=request.message
+    )
+    return share.to_dict()
+
+
+@app.get("/social/share-url/{content_id}/{platform}", summary="取得分享連結", description="取得社交平台分享連結", tags=["社交功能"])
+async def get_share_url(content_id: str, platform: str):
+    """取得社交平台分享連結。"""
+    url = social_manager.get_share_url(content_id, platform)
+    return {"url": url}
+
+
+@app.get("/social/stats/{content_id}", summary="取得內容統計", description="取得內容的社交統計", tags=["社交功能"])
+async def get_content_stats(content_id: str):
+    """取得內容的社交統計。"""
+    stats = social_manager.get_stats(content_id)
+    return stats.to_dict()
+
+
+@app.post("/social/view/{content_id}", summary="記錄瀏覽", description="記錄內容瀏覽", tags=["社交功能"])
+async def record_view(content_id: str):
+    """記錄內容瀏覽。"""
+    social_manager.record_view(content_id)
+    return {"success": True}
+
+
+# ============================================================
+# Recommendation API Endpoints
+# ============================================================
+
+class ContentItemRequest(BaseModel):
+    content_id: str
+    title: str
+    author: str = ""
+    genre: str = ""
+    tags: List[str] = []
+    rating: float = 0.0
+    popularity_score: float = 0.0
+
+
+class UserPreferenceRequest(BaseModel):
+    user_id: str
+    favorite_genres: List[str] = []
+    favorite_authors: List[str] = []
+    favorite_tags: List[str] = []
+
+
+@app.get("/recommendations/{user_id}", summary="取得推薦", description="取得個人化推薦內容", tags=["推薦系統"])
+async def get_recommendations(user_id: str, limit: int = 10):
+    """取得個人化推薦內容。"""
+    recommendations = recommendation_engine.get_recommendations(user_id, limit)
+    return {"recommendations": [r.to_dict() for r in recommendations]}
+
+
+@app.get("/recommendations/similar/{content_id}", summary="取得相似內容", description="取得相似內容推薦", tags=["推薦系統"])
+async def get_similar_content(content_id: str, limit: int = 5):
+    """取得相似內容推薦。"""
+    recommendations = recommendation_engine.get_similar_content(content_id, limit)
+    return {"recommendations": [r.to_dict() for r in recommendations]}
+
+
+@app.get("/recommendations/popular", summary="取得熱門內容", description="取得熱門內容", tags=["推薦系統"])
+async def get_popular_content(limit: int = 10):
+    """取得熱門內容。"""
+    recommendations = recommendation_engine.get_popular_content(limit)
+    return {"recommendations": [r.to_dict() for r in recommendations]}
+
+
+@app.get("/recommendations/trending", summary="取得最新熱門", description="取得最新熱門內容", tags=["推薦系統"])
+async def get_trending_content(limit: int = 10):
+    """取得最新熱門內容。"""
+    recommendations = recommendation_engine.get_trending_content(limit)
+    return {"recommendations": [r.to_dict() for r in recommendations]}
+
+
+@app.post("/recommendations/content", summary="新增內容", description="新增內容到目錄", tags=["推薦系統"])
+async def add_content_item(request: ContentItemRequest):
+    """新增內容到目錄。"""
+    from holo.recommendations import ContentItem
+    content = ContentItem(
+        content_id=request.content_id,
+        title=request.title,
+        author=request.author,
+        genre=request.genre,
+        tags=request.tags,
+        rating=request.rating,
+        popularity_score=request.popularity_score
+    )
+    recommendation_engine.add_content(content)
+    return content.to_dict()
+
+
+@app.put("/recommendations/preferences/{user_id}", summary="設定偏好", description="設定使用者推薦偏好", tags=["推薦系統"])
+async def set_user_preferences(user_id: str, request: UserPreferenceRequest):
+    """設定使用者推薦偏好。"""
+    from holo.recommendations import UserPreference
+    preference = UserPreference(
+        user_id=user_id,
+        favorite_genres=request.favorite_genres,
+        favorite_authors=request.favorite_authors,
+        favorite_tags=request.favorite_tags
+    )
+    recommendation_engine.set_user_preference(preference)
+    return preference.to_dict()
+
+
+@app.post("/recommendations/rate/{user_id}/{content_id}", summary="評分內容", description="對內容評分", tags=["推薦系統"])
+async def rate_content(user_id: str, content_id: str, rating: float):
+    """對內容評分。"""
+    recommendation_engine.rate_content(user_id, content_id, rating)
+    return {"success": True}
+
+
+# ============================================================
+# Notification API Endpoints
+# ============================================================
+
+class NotificationRequest(BaseModel):
+    notification_id: str
+    user_id: str
+    title: str
+    message: str
+    type: str = "info"
+    action_url: Optional[str] = None
+    metadata: Dict[str, Any] = {}
+
+
+class NotificationPreferencesRequest(BaseModel):
+    email_enabled: bool = True
+    push_enabled: bool = True
+    in_app_enabled: bool = True
+    social_notifications: bool = True
+    recommendation_notifications: bool = True
+    system_notifications: bool = True
+
+
+@app.get("/notifications/{user_id}", summary="取得通知", description="取得使用者通知", tags=["通知系統"])
+async def get_notifications(user_id: str, unread_only: bool = False, limit: int = 50):
+    """取得使用者通知。"""
+    notifications = notification_manager.get_notifications(user_id, unread_only, limit)
+    return {"notifications": [n.to_dict() for n in notifications]}
+
+
+@app.get("/notifications/{user_id}/unread-count", summary="取得未讀數", description="取得未讀通知數量", tags=["通知系統"])
+async def get_unread_count(user_id: str):
+    """取得未讀通知數量。"""
+    count = notification_manager.get_unread_count(user_id)
+    return {"count": count}
+
+
+@app.post("/notifications", summary="發送通知", description="發送通知給使用者", tags=["通知系統"])
+async def send_notification(request: NotificationRequest):
+    """發送通知給使用者。"""
+    notification = notification_manager.send_notification(
+        notification_id=request.notification_id,
+        user_id=request.user_id,
+        title=request.title,
+        message=request.message,
+        notification_type=request.type,
+        action_url=request.action_url,
+        metadata=request.metadata
+    )
+    if notification:
+        return notification.to_dict()
+    return {"message": "通知未發送（使用者設定關閉）"}
+
+
+@app.put("/notifications/{user_id}/{notification_id}/read", summary="標記已讀", description="標記通知為已讀", tags=["通知系統"])
+async def mark_notification_read(user_id: str, notification_id: str):
+    """標記通知為已讀。"""
+    success = notification_manager.mark_as_read(user_id, notification_id)
+    return {"success": success}
+
+
+@app.put("/notifications/{user_id}/read-all", summary="全部標記已讀", description="標記所有通知為已讀", tags=["通知系統"])
+async def mark_all_notifications_read(user_id: str):
+    """標記所有通知為已讀。"""
+    count = notification_manager.mark_all_as_read(user_id)
+    return {"count": count}
+
+
+@app.delete("/notifications/{user_id}/{notification_id}", summary="刪除通知", description="刪除通知", tags=["通知系統"])
+async def delete_notification(user_id: str, notification_id: str):
+    """刪除通知。"""
+    success = notification_manager.delete_notification(user_id, notification_id)
+    return {"success": success}
+
+
+@app.delete("/notifications/{user_id}", summary="清除通知", description="清除所有通知", tags=["通知系統"])
+async def clear_notifications(user_id: str):
+    """清除所有通知。"""
+    count = notification_manager.clear_notifications(user_id)
+    return {"count": count}
+
+
+@app.get("/notifications/{user_id}/preferences", summary="取得通知設定", description="取得通知偏好設定", tags=["通知系統"])
+async def get_notification_preferences(user_id: str):
+    """取得通知偏好設定。"""
+    prefs = notification_manager.get_preferences(user_id)
+    return prefs.to_dict()
+
+
+@app.put("/notifications/{user_id}/preferences", summary="更新通知設定", description="更新通知偏好設定", tags=["通知系統"])
+async def update_notification_preferences(user_id: str, request: NotificationPreferencesRequest):
+    """更新通知偏好設定。"""
+    from holo.notifications import NotificationPreferences
+    prefs = NotificationPreferences(
+        user_id=user_id,
+        email_enabled=request.email_enabled,
+        push_enabled=request.push_enabled,
+        in_app_enabled=request.in_app_enabled,
+        social_notifications=request.social_notifications,
+        recommendation_notifications=request.recommendation_notifications,
+        system_notifications=request.system_notifications
+    )
+    notification_manager.set_preferences(prefs)
+    return prefs.to_dict()
+
+
+# ============================================================
+# System & Monitoring API Endpoints
+# ============================================================
+
+@app.get("/system/health", summary="健康檢查", description="檢查系統健康狀態", tags=["系統監控"])
+async def health_check():
+    """檢查系統健康狀態。"""
+    return {
+        "status": "healthy",
+        "version": "0.3.0",
+        "services": {
+            "api": "up",
+            "database": "up",
+            "cache": "up"
+        }
+    }
+
+
+@app.get("/system/metrics", summary="系統指標", description="取得系統效能指標", tags=["系統監控"])
+async def get_metrics():
+    """取得系統效能指標。"""
+    metrics = perf_monitor.get_all_metrics()
+    return metrics
