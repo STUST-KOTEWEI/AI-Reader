@@ -13,6 +13,11 @@ from holo.ingestion.text_segmenter import TextSegmenter
 from holo.auditory.elevenlabs_tts import get_tts_engine
 from holo.sensory.haptics_emulator import HapticsEmulator
 
+# Import new modules
+from holo.nlp.emotion_analyzer import EmotionAnalyzer
+from holo.visual.image_generator import ImageConceptGenerator
+from holo.olfactory.scent_mapper import ScentMapper
+
 app = FastAPI(
     title="Project-HOLO API",
     description="提供神經語意框架的多模態敘事沉浸體驗 API",
@@ -39,6 +44,11 @@ app.add_middleware(
 text_segmenter = TextSegmenter()
 tts_engine = get_tts_engine()
 haptics_emulator = HapticsEmulator()
+
+# Initialize new components
+emotion_analyzer = EmotionAnalyzer()
+image_generator = ImageConceptGenerator()
+scent_mapper = ScentMapper()
 
 
 class NarrativeRequest(BaseModel):
@@ -174,4 +184,174 @@ async def list_haptic_patterns():
     return {
         "patterns": list(patterns.keys()),
         "total": len(patterns)
+    }
+
+
+# ==================== NEW ENDPOINTS ====================
+
+class EmotionRequest(BaseModel):
+    text: str
+    detailed: bool = False
+
+
+@app.post("/analyze_emotion", summary="Analyze Emotion", description="Analyzes emotional content in text.")
+async def analyze_emotion(request: EmotionRequest):
+    """
+    Analyzes text to detect emotions and sentiment.
+    
+    - **text**: The text to analyze.
+    - **detailed**: Whether to return detailed analysis with keyword counts.
+    """
+    if not request.text or not request.text.strip():
+        return {"error": "Text is required"}
+    
+    result = emotion_analyzer.analyze(request.text, detailed=request.detailed)
+    return result
+
+
+class VisualRequest(BaseModel):
+    text: str
+    style: str = "realistic"
+    max_concepts: int = 5
+
+
+@app.post("/generate_visual", summary="Generate Visual Concepts", description="Generates visual concepts from narrative text.")
+async def generate_visual(request: VisualRequest):
+    """
+    Generates visual concepts and scene descriptions from text.
+    
+    - **text**: The narrative text to visualize.
+    - **style**: Visual style ('realistic', 'artistic', 'abstract', 'minimalist').
+    - **max_concepts**: Maximum number of concepts to return.
+    """
+    if not request.text or not request.text.strip():
+        return {"error": "Text is required"}
+    
+    result = image_generator.generate_concepts(
+        request.text,
+        style=request.style,
+        max_concepts=request.max_concepts
+    )
+    return result
+
+
+class ScentRequest(BaseModel):
+    text: str
+    intensity: float = 0.5
+    emotion: str = None
+
+
+@app.post("/generate_scent", summary="Generate Scent Profile", description="Maps narrative elements to scent profiles.")
+async def generate_scent(request: ScentRequest):
+    """
+    Generates scent profiles from narrative text.
+    
+    - **text**: The text to analyze for scent mapping.
+    - **intensity**: Base intensity multiplier (0.0-1.0).
+    - **emotion**: Optional emotion to influence scent selection.
+    """
+    if not request.text or not request.text.strip():
+        return {"error": "Text is required"}
+    
+    result = scent_mapper.generate_profile(
+        request.text,
+        intensity=request.intensity,
+        emotion=request.emotion
+    )
+    return result
+
+
+@app.get("/scent_families", summary="List Scent Families", description="Lists all available scent families.")
+async def list_scent_families():
+    """
+    Lists all available scent families and their descriptions.
+    """
+    families = scent_mapper.list_families()
+    return {
+        "families": families,
+        "total": len(families)
+    }
+
+
+@app.get("/visual_styles", summary="List Visual Styles", description="Lists all available visual styles.")
+async def list_visual_styles():
+    """
+    Lists all available visual styles for concept generation.
+    """
+    styles = image_generator.list_available_styles()
+    return {
+        "styles": styles,
+        "total": len(styles)
+    }
+
+
+class FullImmersionRequest(BaseModel):
+    text: str
+    user_profile: Dict[str, Any] = {}
+    visual_style: str = "realistic"
+    scent_intensity: float = 0.5
+
+
+@app.post("/generate_full_immersion", summary="Generate Full Immersion", description="Generates complete multi-sensory immersion experience.")
+async def generate_full_immersion(request: FullImmersionRequest):
+    """
+    Generates a complete multi-sensory immersion experience including:
+    - Text segmentation
+    - Emotion analysis
+    - Haptic patterns
+    - Visual concepts
+    - Scent profiles
+    - Audio configuration
+    
+    - **text**: The narrative text to process.
+    - **user_profile**: Optional user preferences.
+    - **visual_style**: Visual style for concept generation.
+    - **scent_intensity**: Base intensity for scent profiles.
+    """
+    if not request.text or not request.text.strip():
+        return {"error": "Text is required"}
+    
+    # Analyze emotion first to inform other modules
+    emotion_result = emotion_analyzer.analyze(request.text)
+    primary_emotion, emotion_intensity = emotion_analyzer.get_emotion_for_haptics(request.text)
+    
+    # Generate all components
+    segments_data = text_segmenter.get_segments_with_metadata(request.text)
+    haptic_pattern = haptics_emulator.generate_from_emotion(primary_emotion, emotion_intensity)
+    visual_concepts = image_generator.generate_concepts(request.text, style=request.visual_style)
+    scent_profile = scent_mapper.generate_profile(request.text, intensity=request.scent_intensity, emotion=primary_emotion)
+    
+    return {
+        "text_analysis": {
+            "segments": segments_data["segments"][:5],
+            "total_segments": segments_data["total_segments"],
+            "strategy": segments_data["strategy_used"]
+        },
+        "emotion_analysis": {
+            "primary_emotion": emotion_result["primary_emotion"],
+            "confidence": emotion_result["confidence"],
+            "sentiment": emotion_result["sentiment"],
+            "intensity": emotion_result["intensity"]
+        },
+        "auditory": {
+            "tts_engine": "gTTS (fallback)" if hasattr(tts_engine, 'is_fallback') else "ElevenLabs",
+            "available_voices": tts_engine.get_available_voices()
+        },
+        "haptic": {
+            "pattern_name": haptic_pattern.get("name"),
+            "events_count": len(haptic_pattern.get("events", [])),
+            "pattern": haptic_pattern
+        },
+        "visual": {
+            "scene_description": visual_concepts.get("scene_description"),
+            "mood": visual_concepts.get("mood"),
+            "lighting": visual_concepts.get("lighting"),
+            "color_palette": visual_concepts.get("color_palette"),
+            "concepts": visual_concepts.get("concepts", [])[:3]
+        },
+        "olfactory": {
+            "primary_scent": scent_profile.get("primary_scent"),
+            "ambient_scents": scent_profile.get("ambient_scents"),
+            "blend_recipe": scent_profile.get("blend_recipe")
+        }
     }

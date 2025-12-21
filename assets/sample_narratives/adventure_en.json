@@ -1,0 +1,13 @@
+{
+  "id": "adventure_01",
+  "title": "The Forest Adventure",
+  "language": "en",
+  "genre": "fantasy",
+  "text": "The ancient forest stretched endlessly before her, its towering trees reaching toward a sky painted in hues of amber and gold. A gentle breeze carried the scent of pine and wildflowers as she stepped onto the moss-covered path. Somewhere in the distance, a stream whispered secrets to the stones. This was the beginning of her greatest adventure.",
+  "metadata": {
+    "emotions": ["wonder", "peace", "excitement"],
+    "visual_elements": ["forest", "trees", "sky", "path", "stream"],
+    "scent_families": ["woody", "floral", "fresh"],
+    "mood": "adventurous"
+  }
+}
