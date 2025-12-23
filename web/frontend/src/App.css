@@ -5,6 +5,35 @@
   text-align: center;
 }
 
+/* Skip Link for Accessibility */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #646cff;
+  color: white;
+  padding: 8px;
+  text-decoration: none;
+  z-index: 100;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* Screen Reader Only Text */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;
@@ -134,4 +163,42 @@ pre {
   white-space: pre-wrap;
   word-wrap: break-word;
   color: #f0f0f0;
+}
+
+.audio-player {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background-color: #1e1e1e;
+  border-radius: 8px;
+}
+
+.audio-player h3 {
+  margin-top: 0;
+  color: #a0a0a0;
+}
+
+.audio-player audio {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+/* Enhanced Focus Indicators */
+*:focus-visible {
+  outline: var(--focus-outline-width, 2px) solid #646cff;
+  outline-offset: var(--focus-outline-offset, 2px);
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: var(--animation-duration, 0.01ms) !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+body.reduced-motion * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
 }

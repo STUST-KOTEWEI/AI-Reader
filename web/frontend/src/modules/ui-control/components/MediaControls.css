@@ -1,0 +1,211 @@
+.media-controls {
+  background-color: #1e1e1e;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.controls-main {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.control-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  border: 2px solid #535bf2;
+  background-color: #2a2a2a;
+  color: #f0f0f0;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 100px;
+}
+
+.control-button:hover:not(:disabled) {
+  background-color: #535bf2;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(83, 91, 242, 0.3);
+}
+
+.control-button:focus {
+  outline: 3px solid #646cff;
+  outline-offset: 2px;
+}
+
+.control-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.control-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: #444;
+}
+
+.control-button[aria-pressed="true"] {
+  background-color: #535bf2;
+  border-color: #646cff;
+}
+
+.button-text {
+  font-size: 0.875rem;
+}
+
+.scan-button[aria-pressed="true"] {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scan-button[aria-pressed="true"] {
+    animation: none;
+  }
+}
+
+.controls-secondary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background-color: #2a2a2a;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.speed-label {
+  color: #a0a0a0;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.speed-control {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.speed-slider {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: #444;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.speed-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #646cff;
+  cursor: pointer;
+  border: 2px solid #535bf2;
+}
+
+.speed-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #646cff;
+  cursor: pointer;
+  border: 2px solid #535bf2;
+}
+
+.speed-slider:focus {
+  outline: 2px solid #646cff;
+  outline-offset: 2px;
+}
+
+.speed-slider:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.speed-value {
+  min-width: 50px;
+  text-align: center;
+  color: #f0f0f0;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.keyboard-shortcuts {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #444;
+}
+
+.keyboard-shortcuts details {
+  color: #a0a0a0;
+}
+
+.keyboard-shortcuts summary {
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.keyboard-shortcuts summary:hover {
+  background-color: #2a2a2a;
+}
+
+.keyboard-shortcuts summary:focus {
+  outline: 2px solid #646cff;
+  outline-offset: 2px;
+}
+
+.keyboard-shortcuts ul {
+  list-style: none;
+  padding: 1rem 0 0 1rem;
+  margin: 0;
+}
+
+.keyboard-shortcuts li {
+  padding: 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.keyboard-shortcuts kbd {
+  background-color: #2a2a2a;
+  border: 1px solid #535bf2;
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  font-family: monospace;
+  font-size: 0.875rem;
+  color: #f0f0f0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+  .controls-main {
+    flex-direction: column;
+  }
+  
+  .control-button {
+    width: 100%;
+  }
+}
