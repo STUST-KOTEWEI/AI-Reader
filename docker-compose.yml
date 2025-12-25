@@ -1,0 +1,52 @@
+# Project HOLO - Docker Compose Configuration
+# Development and production deployment
+
+services:
+  # Backend API Service
+  backend:
+    build:
+      context: .
+      target: backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./holo:/app/holo
+      - ./web/backend:/app/web/backend
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend Development Service
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./web/frontend:/app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    depends_on:
+      - backend
+
+  # Production Service (combined)
+  production:
+    build:
+      context: .
+      target: production
+    ports:
+      - "80:80"
+      - "8000:8000"
+    environment:
+      - NODE_ENV=production
+    profiles:
+      - prod
+
+# Networks
+networks:
+  default:
+    driver: bridge

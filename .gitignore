@@ -33,9 +33,14 @@ Thumbs.db
 
 # Log files
 *.log
+logs/
 
 # Media files
 *.mp3
+
+# Database
+data/
+*.db
 
 
 # Security / API Keys

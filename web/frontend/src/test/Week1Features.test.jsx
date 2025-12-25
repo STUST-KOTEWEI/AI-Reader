@@ -159,7 +159,8 @@ describe('Week 1 Sprint Features', () => {
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText('請輸入敘事文字')).toBeInTheDocument();
+      // Error message now uses i18n placeholder text
+      expect(screen.getByText('在這裡輸入您的故事或情境...')).toBeInTheDocument();
     });
   });
 
@@ -178,7 +179,8 @@ describe('Week 1 Sprint Features', () => {
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/API 請求失敗/)).toBeInTheDocument();
+      // Error message now uses i18n format
+      expect(screen.getByText(/API error/)).toBeInTheDocument();
     });
   });
 
